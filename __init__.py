@@ -90,8 +90,9 @@ class Crystal(object):
         if not all(atom in form_factors for atom, site in self.basis):
             raise KeyError('Specified atom has no form factor in database')
         def structure_factor(q):
-            return sum(n.exp(1j*n.dot(q,self.l_const*site)) * form_factors[atom](n.linalg.norm(q))
-                       for atom, site in self.basis)
+            return sum([n.exp(1j*n.dot(q,self.l_const*site)) * \
+                            form_factors[atom](n.linalg.norm(q))
+                            for atom, site in self.basis])
         return structure_factor
 
     def powder_XRD(self,wavelength):
@@ -99,12 +100,64 @@ class Crystal(object):
         Generates a powder XRD spectrum for radiation with the
         given wavelength (in angstroms)
         """
-        #First, we must generate a list of all reciprocal lattice
-        # vectors within reach of the input wavelength
-        nu = 2*n.pi/wavelength
-        min_step = min([n.linalg.norm(a) for a in self.lattice])
-        steps = int(2*nu / min_step) * 1.5 #this is a fudge right now
+        # We generate a list of accessible reciprocal lattice
+        # vectors. To be accessible, the magnitude of a rlv's
+        # wavevector must be less than twice that of the input
+        # radiation's wavenumber.
         
+        #The input wavenumber.
+        nu = 2*n.pi/wavelength 
+        # Next we find all the rlvs in the closest
+        # parallelogram "shell" to a point in the rl
+        parallelogram = [self.rlattice[0]*h + self.rlattice[1]*j 
+                         + self.rlattice[2]*k for h,j,k in 
+                         it.product((-1,0,1),repeat=3)]
+        # The shortest of these rlvs will be important
+        min_step = min([n.linalg.norm(a) for a in parallelogram
+                        if not all(a==0)]) / self.l_const
+        # If we look at all the points in this many parallelogram
+        # "shells", we can't miss all the accessible wavevectors
+        num_shells = int(2*nu / min_step)
+        # Now we generate these possibilities
+        possibilities = [(self.rlattice[0]*h + self.rlattice[1]*j
+                         + self.rlattice[2]*k) / self.l_const
+                         for h,j,k in it.product(
+                                 range(-num_shells,num_shells+1),
+                                 repeat=3)]
+        # And we filter the possibilities, getting rid of all the
+        # rlvs that are too long.
+        rlvs = [rlv for rlv in possibilities if n.linalg.norm(rlv) < 2*nu]
+
+        # Now we calculate the scattering intensity from each rlv
+        intensities = {tuple(rlv): n.abs(self.structure_factor(rlv))**2
+                       for rlv in rlvs}
+
+        # We actually only care about the magnitudes of the rlvs
+        magnitudes = {}
+        for rlv, intensity in intensities.items():
+            repeat = False
+            mag = n.linalg.norm(rlv)
+            for oldmag in magnitudes:
+                if n.isclose(mag,oldmag):
+                    magnitudes[oldmag] += intensity
+                    repeat = True
+                    break
+            if not repeat:
+                magnitudes[mag] = intensity
+        
+        # Now we calculate the scattering angles and intensities
+        angles = {2 * n.arcsin(mag / (2 * nu)): intensity
+                  for mag, intensity in magnitudes.items()}
+
+        graph_angles = n.linspace(0,n.pi,1000)
+        graph_intensities = n.zeros(graph_angles.shape)
+        
+        for angle, intensity in angles.items():
+            graph_intensities += intensity * \
+                    n.exp(-(graph_angles - angle)**2 * (360*2 / n.pi)**2)
+        
+        return graph_angles, graph_intensities
+
 
 
 class FCC(Lattice):
@@ -136,8 +189,11 @@ class Cubic(Lattice):
             n.array([0,0,1])
         )
     
-
-lattice = FCC(5.64)
-basis = Basis(('Cl',[0,0,0]),('N',[0.5,0.5,0.5]))
-crystal = lattice + basis
-crystal.powder_XRD(1.5406)
+if __name__ == '__main__':
+    lattice = FCC(5.64)#FCC(5.64)
+    basis = Basis(('Cl',[0,0,0]),('N',[0.5,0.5,0.5]))
+    crystal = lattice + basis
+    angles, intensities = crystal.powder_XRD(1.54)
+    angles = angles * 180 / n.pi
+    p.plot(angles[0:500],intensities[0:500])
+    p.show()
