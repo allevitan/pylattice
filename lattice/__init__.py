@@ -106,17 +106,17 @@ class Crystal(object):
         
         #The input wavenumber.
         nu = 2*n.pi/wavelength 
-        # Next we find all the rlvs in the closest
-        # parallelogram "shell" to a point in the rl
-        parallelogram = [self.rlattice[0]*h + self.rlattice[1]*j 
-                         + self.rlattice[2]*k for h,j,k in 
-                         it.product((-1,0,1),repeat=3)]
-        # The shortest of these rlvs will be important
-        min_step = min([n.linalg.norm(a) for a in parallelogram
-                        if not all(a==0)]) / self.l_const
+        # Now we find the shortest distance to a wall of a 
+        # parallelogram "shell" in the reciprocal lattice
+        min_step = min(abs(n.dot(
+            (self.rlattice[0]+self.rlattice[1]
+                 +self.rlattice[2])/self.l_const,
+            n.cross(self.rlattice[i],self.rlattice[j])
+            /n.linalg.norm(n.cross(self.rlattice[i],self.rlattice[j]))))
+                       for i,j in [(0,1),(1,2),(2,0)])
         # If we look at all the points in this many parallelogram
         # "shells", we can't miss all the accessible wavevectors
-        num_shells = int(n.ceil(2*nu / min_step))
+        num_shells = int(2*nu / min_step)
         # Now we generate these possibilities
         possibilities = [(self.rlattice[0]*h + self.rlattice[1]*j
                          + self.rlattice[2]*k) / self.l_const
@@ -164,6 +164,20 @@ class Crystal(object):
         return graph_angles, graph_intensities
 
 
+    def Laue_XRD(lattice_dir, k_start, k_end):
+        """
+        Outputs a Laue scattering pattern given the direction
+        of incident radiation, the shortest wavevector and the
+        longest wavevector.
+        """
+        # We should use the geometric construction here: We can find all 
+        # lattice vectors in the cescent. All the scattering points will
+        # be in the big circle, so we just need to list the points in the
+        # big circle. Which we can do by a similar method to the one
+        # for powder scattering. But we should really fix that remaining bug.
+        # How to find the shortest perpendicular in a parallelogram.
+        pass
+        
 
 class FCC(Lattice):
     def __init__(self,l_const):
