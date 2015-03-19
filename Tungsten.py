@@ -5,7 +5,7 @@ from lattice import *
 
 # Set up the crystal structure
 lattice = BCC(3.155)
-basis = Basis(('W',[0,0,0]))
+basis = Basis([('W',[0,0,0])],l_const=3.155)
 crystal = lattice + basis
 
 # Plot a simulated XRD with copper radiation

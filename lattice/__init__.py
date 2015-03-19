@@ -39,8 +39,7 @@ def get_form_factors():
 
 class Lattice(object):
     
-    def __init__(self,l_const,a1,a2,a3):
-        self.l_const = l_const
+    def __init__(self,a1,a2,a3):
         self.lattice = [n.array(a1),n.array(a2),n.array(a3)]
         self.rlattice = [
             2*n.pi*n.cross(a2,a3) /
@@ -61,15 +60,14 @@ class Lattice(object):
 class Basis(object):
     """
     Stores a basis, defined by atomic names and sites like so:
-    basis = Basis(('C',[0,0,0]),('C',[0.25,0.25,0.25]))
+    basis = Basis(('C',[0,0,0]),('C',[0.25,0.25,0.25]),l_const=l_const)
     It will inherit a lattice constant from whatever lattice
     it is added too
     """
     
-    def __init__(self,first_atom,*args):
+    def __init__(self,atoms,l_const=1):
         #first_atom is included to ensure something is in the basis
-        self.basis = [(first_atom[0], n.array(first_atom[1]))] + \
-                     [(atom, n.array(site)) for atom, site in args]
+        self.basis = [(atom, l_const*n.array(site)) for atom, site in atoms]
 
 
 class Crystal(object):
@@ -78,7 +76,6 @@ class Crystal(object):
     """
     
     def __init__(self,lattice,basis):
-        self.l_const = lattice.l_const
         self.lattice = lattice.lattice
         self.rlattice = lattice.rlattice
         self.basis = basis.basis
@@ -89,7 +86,7 @@ class Crystal(object):
         if not all(atom in form_factors for atom, site in self.basis):
             raise KeyError('Specified atom has no form factor in database')
         def structure_factor(q):
-            return sum([n.exp(1j*n.dot(q,self.l_const*site)) * \
+            return sum([n.exp(1j*n.dot(q,site)) * \
                             form_factors[atom](n.linalg.norm(q))
                             for atom, site in self.basis])
         return structure_factor
@@ -110,7 +107,7 @@ class Crystal(object):
         # parallelogram "shell" in the reciprocal lattice
         min_step = min(abs(n.dot(
             (self.rlattice[0]+self.rlattice[1]
-                 +self.rlattice[2])/self.l_const,
+                 +self.rlattice[2]),
             n.cross(self.rlattice[i],self.rlattice[j])
             /n.linalg.norm(n.cross(self.rlattice[i],self.rlattice[j]))))
                        for i,j in [(0,1),(1,2),(2,0)])
@@ -119,7 +116,7 @@ class Crystal(object):
         num_shells = int(2*nu / min_step)
         # Now we generate these possibilities
         possibilities = [(self.rlattice[0]*h + self.rlattice[1]*j
-                         + self.rlattice[2]*k) / self.l_const
+                         + self.rlattice[2]*k)
                          for h,j,k in it.product(
                                  range(-num_shells,num_shells+1),
                                  repeat=3)]
@@ -130,7 +127,7 @@ class Crystal(object):
         # Now we renormalize the intensities to account for the fact that
         # the same lattice can be described by different unit cells
         unit_vol = n.abs(n.dot(self.lattice[0],n.cross(
-            self.lattice[1],self.lattice[2])))*self.l_const**3
+            self.lattice[1],self.lattice[2])))
         
         # Now we calculate the scattering intensity from each rlv
         intensities = {tuple(rlv): n.abs(self.structure_factor(rlv)/unit_vol)**2
@@ -182,29 +179,26 @@ class Crystal(object):
 class FCC(Lattice):
     def __init__(self,l_const):
         super(FCC,self).__init__(
-            l_const,
-            n.array([0.5,0.5,0]),
-            n.array([0.5,0,0.5]),
-            n.array([0,0.5,0.5])
+            l_const * n.array([0.5,0.5,0]),
+            l_const * n.array([0.5,0,0.5]),
+            l_const * n.array([0,0.5,0.5])
         )
 
 
 class BCC(Lattice):
     def __init__(self,l_const):
         super(BCC,self).__init__(
-            l_const,
-            n.array([0.5,0.5,-0.5]),
-            n.array([0.5,-0.5,0.5]),
-            n.array([-0.5,0.5,0.5])
+            l_const * n.array([0.5,0.5,-0.5]),
+            l_const * n.array([0.5,-0.5,0.5]),
+            l_const * n.array([-0.5,0.5,0.5])
         )
 
 
 class Cubic(Lattice):
     def __init__(self,l_const):
         super(Cubic,self).__init__(
-            l_const,
-            n.array([1,0,0]),
-            n.array([0,1,0]),
-            n.array([0,0,1])
+            l_const * n.array([1,0,0]),
+            l_const * n.array([0,1,0]),
+            l_const * n.array([0,0,1])
         )
     
