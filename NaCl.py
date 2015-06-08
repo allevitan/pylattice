@@ -1,6 +1,5 @@
 from matplotlib import pyplot as p
 from matplotlib import rc
-rc('text', usetex=True)
 from lattice import *
 
 # Set up the crystal structure

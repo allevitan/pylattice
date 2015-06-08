@@ -1,4 +1,4 @@
-from __future__ import print_function, division
+from __future__ import print_function, division, unicode_literals
 import numpy as n
 import itertools as it
 
@@ -32,7 +32,7 @@ def get_form_factors():
                     a3 * n.exp(-b3*(q/(4*n.pi))**2) + \
                     a4 * n.exp(-b4*(q/(4*n.pi))**2) + c
                     for a1,b1,a2,b2,a3,b3,a4,b4,c in constants]
-    return {label:form_factor
+    return {label.decode("utf-8"):form_factor
             for label, form_factor
             in zip(labels, form_factors)}
         
