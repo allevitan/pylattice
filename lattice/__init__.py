@@ -1,4 +1,4 @@
-from __future__ import print_function, division, unicode_literals
+from __future__ import print_function, division
 import numpy as n
 import itertools as it
 
@@ -32,7 +32,7 @@ def get_form_factors():
                     a3 * n.exp(-b3*(q/(4*n.pi))**2) + \
                     a4 * n.exp(-b4*(q/(4*n.pi))**2) + c
                     for a1,b1,a2,b2,a3,b3,a4,b4,c in constants]
-    return {label.decode("utf-8"):form_factor
+    return {label:form_factor
             for label, form_factor
             in zip(labels, form_factors)}
         
@@ -121,8 +121,10 @@ class Crystal(object):
                                  range(-num_shells,num_shells+1),
                                  repeat=3)]
         # And we filter the possibilities, getting rid of all the
-        # rlvs that are too long.
-        rlvs = [rlv for rlv in possibilities if n.linalg.norm(rlv) < 2*nu]
+        # rlvs that are too long and the 0 vector
+        rlvs = [rlv for rlv in possibilities 
+                if n.linalg.norm(rlv) < 2*nu
+                and not n.allclose(rlv,0)]
 
         # Now we renormalize the intensities to account for the fact that
         # the same lattice can be described by different unit cells
@@ -130,7 +132,9 @@ class Crystal(object):
             self.lattice[1],self.lattice[2])))
         
         # Now we calculate the scattering intensity from each rlv
-        intensities = {tuple(rlv): n.abs(self.structure_factor(rlv)/unit_vol)**2
+        intensities = {
+            tuple(rlv): (n.abs(self.structure_factor(rlv)/unit_vol) /
+                         n.sin(2*n.arcsin(n.linalg.norm(rlv)/(2*nu))))**2
                        for rlv in rlvs}
 
         # We actually only care about the magnitudes of the rlvs
@@ -148,15 +152,23 @@ class Crystal(object):
         
         # Now we calculate the scattering angles and intensities
         angles = {2 * n.arcsin(mag / (2 * nu)) * 180 / n.pi:
-                  intensity
+                  intensity *
+                  # This factor corrects for the angular dependence of
+                  # scattering probability
+                  n.cos(n.arcsin(mag/(2*nu))) *
+                  # This factor corrects for polarization effects,
+                  # Assuming an unpolarized input beam
+                  (1 + n.cos(2*n.arcsin(mag/(2*nu)))**2)/2
                   for mag, intensity in magnitudes.items()}
 
-        graph_angles = n.linspace(0,180,1000)
+        graph_angles = n.linspace(0,180,5000)
         graph_intensities = n.zeros(graph_angles.shape)
         
         for angle, intensity in angles.items():
+            #printout of relative intensities to validate program
+            #print(angle,intensity/n.max(angles.values())*100)
             graph_intensities += intensity * \
-                    n.exp(-(graph_angles - angle)**2 / (0.5)**2)
+                    n.exp(-(graph_angles - angle)**2 / (2*(0.1)**2))
         
         return graph_angles, graph_intensities
 

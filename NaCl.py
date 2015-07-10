@@ -1,5 +1,4 @@
 from matplotlib import pyplot as p
-from matplotlib import rc
 from lattice import *
 
 # Set up the crystal structure
@@ -10,7 +9,8 @@ basis = Basis([('Cl',[0,0,0]),
 crystal = lattice + basis
 
 # Plot a simulated XRD with copper radiation
-p.plot(*crystal.powder_XRD(1.54))
+angles, values = crystal.powder_XRD(1.54)
+p.plot(angles, values)
 
 # Add some more info to the plot
 p.title(r'Simulated Powder XRD of NaCl, $\lambda = 1.54$')

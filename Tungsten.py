@@ -1,6 +1,4 @@
 from matplotlib import pyplot as p
-from matplotlib import rc
-rc('text', usetex=True)
 from lattice import *
 
 # Set up the crystal structure
@@ -9,7 +7,8 @@ basis = Basis([('W',[0,0,0])],l_const=3.155)
 crystal = lattice + basis
 
 # Plot a simulated XRD with copper radiation
-p.plot(*crystal.powder_XRD(1.54))
+angles, values = crystal.powder_XRD(1.54)
+p.plot(angles, values)
 
 # Add some more info to the plot
 p.title(r'Simulated Powder XRD of Tungsten, $\lambda = 1.54$')
