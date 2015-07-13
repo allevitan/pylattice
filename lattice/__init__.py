@@ -133,8 +133,7 @@ class Crystal(object):
         
         # Now we calculate the scattering intensity from each rlv
         intensities = {
-            tuple(rlv): (n.abs(self.structure_factor(rlv)/unit_vol) /
-                         n.sin(2*n.arcsin(n.linalg.norm(rlv)/(2*nu))))**2
+            tuple(rlv): n.abs(self.structure_factor(rlv)/unit_vol)**2
                        for rlv in rlvs}
 
         # We actually only care about the magnitudes of the rlvs
@@ -152,21 +151,34 @@ class Crystal(object):
         
         # Now we calculate the scattering angles and intensities
         angles = {2 * n.arcsin(mag / (2 * nu)) * 180 / n.pi:
-                  intensity *
+                  intensity * 
+                  # This factor corrects for the fact that the same total
+                  # power in the debye scherrer rings is more
+                  # concentrated at 2\theta =  0 and 2pi
+                  1 / n.sin(2*n.arcsin(mag/(2*nu))) *
                   # This factor corrects for the angular dependence of
-                  # scattering probability
-                  n.cos(n.arcsin(mag/(2*nu))) *
+                  # scattering probability given an equal incident
+                  # scattering wavevector and an equal alowed variance
+                  # around the scattering vector
+                  1 * #cos(theta)/cos(theta)
+                  # This factor corrects for the fact that destructive
+                  # interference builds up faster at shorter wavelengths,
+                  # meaning that the allowed variance around the scattering
+                  # vector is proportional to 1/mag of scattering vector
+                  1 / mag *
                   # This factor corrects for polarization effects,
-                  # Assuming an unpolarized input beam
+                  # Assuming an unpolarized input beam and no polarization
+                  # analysis
                   (1 + n.cos(2*n.arcsin(mag/(2*nu)))**2)/2
-                  for mag, intensity in magnitudes.items()}
+                  for mag, intensity in magnitudes.items()
+                  if not n.allclose(intensity,0)}
 
         graph_angles = n.linspace(0,180,5000)
         graph_intensities = n.zeros(graph_angles.shape)
         
-        for angle, intensity in angles.items():
+        for angle, intensity in sorted(angles.items()):
             #printout of relative intensities to validate program
-            #print(angle,intensity/n.max(angles.values())*100)
+            print(angle,intensity/n.max(angles.values())*100)
             graph_intensities += intensity * \
                     n.exp(-(graph_angles - angle)**2 / (2*(0.1)**2))
         
