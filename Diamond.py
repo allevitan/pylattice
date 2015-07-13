@@ -4,11 +4,12 @@ from lattice import *
 
 # Set up the crystal structure
 lattice = FCC(3.5597)
-basis = Basis([('C',[0,0,0]),('C',[0.25,0.25,0.25])],l_const=3.57)
+basis = Basis([('C',[0,0,0]),('C',[0.25,0.25,0.25])],l_const=3.5597)
 crystal = lattice + basis
 
 # Plot a simulated XRD with copper radiation
-angles, values = crystal.powder_XRD(1.5405)
+scattering_data = powder_XRD(crystal,1.5405)
+angles, values = spectrumify(scattering_data)
 p.plot(angles,values)
 
 # Add some more info to the plot

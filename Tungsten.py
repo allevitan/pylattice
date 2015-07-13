@@ -7,7 +7,8 @@ basis = Basis([('W',[0,0,0])],l_const=3.155)
 crystal = lattice + basis
 
 # Plot a simulated XRD with copper radiation
-angles, values = crystal.powder_XRD(1.5405)
+scattering_data = powder_XRD(crystal, 1.5405)
+angles, values = spectrumify(scattering_data)
 p.plot(angles, values)
 
 # Add some more info to the plot
