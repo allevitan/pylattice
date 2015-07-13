@@ -98,8 +98,6 @@ def spectrumify(scattering_data):
     max_peak = n.max(scattering_data.values())
     
     for angle, intensity in sorted(scattering_data.items()):
-        #printout of relative intensities to validate program
-        print(angle,intensity/max_peak*100)
         graph_intensities += intensity * \
                              n.exp(-(graph_angles - angle)**2 / (2*(0.1)**2))
         
