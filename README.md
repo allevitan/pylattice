@@ -41,11 +41,11 @@ p.show()
 
 #### Defining a Crystal
 
-* Define a lattice, either manually with __Lattice__  or using one of the helper functions __FCC__,__BCC__,__Cubic__,or__Hexagonal__.
+* Define a lattice, either manually with __Lattice__  or using one of the helper functions __FCC__,__BCC__,__Cubic__,or __Hexagonal__.
 * Define a basis using __Basis__, providing a list of atoms and locations
 * Define the crystal as the sum of the lattice and basis
 
-### Calculating the Spectrum
+#### Calculating the Spectrum
 
 * __powder_xrd__(wavelength) returns a dictionary mapping angles to intensities. With the keyword argument "get_mults=True", it will also return a dictionary mapping angles to multiplicities
 
