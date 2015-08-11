@@ -1,35 +1,44 @@
 # Pylattice
 
-## Why it Exists
+## What it Does
 
-I wanted to learn how X-Ray Diffraction works, and there's no better way to do that than by simulating it.
+pylattice calculates x-ray diffraction spectra for most crystalline materials. You tell it the crystal structure and the wavelength of light, and it does the rest. It's designed to be used in other scripts that need to programatically calculate x-ray diffraction spectra.
+
+## Dependencies
+
+pylattice only depends on [numpy](http://www.numpy.org). If you want to run the examples which plot spectra, you will need [matplotlib](http://matplotlib.org) as well.
+
+## Installation
+
+Simply put the "lattice" folder somewhere on your pythonpath.
 
 ## How to Use It
 
-Let's say for some reason you'd rather use this than one of the many infinitely better, more extensible, and more usable tools that other people have made. Or maybe you're me in the future trying to figure out how the hell this ever worked. Anyway, here's a simple example (for Sodium Chloride)
+Pylattice has simple syntax and just tries to get the job done. Below is an example that calculates a powder XRD spectrum for NaCl:
 
 ```python
 from matplotlib import pyplot as p
 from lattice import *
 
-# Set up the crystal lattice, in this case using a handy-dandy
-# FCC subclass of Lattice(). The lattice constant should be in
-# Angstroms
-lattice = FCC(5.64)
-
-# Now we set up our atomic basis. Specify atoms and their
-# corresponding locations, along with a lattice constant
-# (in Anstroms) to multiply all distances by
+# Set up the crystal structure
+lattice = FCC(5.63)
 basis = Basis([('Cl',[0,0,0]),
-               ('N',[0.5,0.5,0.5])],
-              l_const=5.64)
-
-# Yes, I know it's really a lattice convolved with a basis,
-# but this will make condensed matter professors everywhere
-# happy
+               ('Na',[0.5,0.5,0.5])],
+              l_const=5.63)
 crystal = lattice + basis
 
-# powder_XRD outputs a fancy-lookin' simulated spectrum. Don't
-# trust the intensities, but the angles should be spot-on
-p.plot(*crystal.powder_XRD(1.54))
+# Plot a simulated XRD with copper radiation
+scattering_data = powder_XRD(crystal, 1.5405)
+angles, values = spectrumify(scattering_data)
+p.plot(angles, values)
+
+# Add some more info to the plot
+p.title(r'Simulated Powder XRD of NaCl, $\lambda = 1.5405$')
+p.xlabel(r'$2\theta$')
+p.ylabel(r'Scattering Intensity per Cubic Angstrom')
+p.show()
 ```
+
+__powder_xrd__ returns a dictionary mapping angles to intensities. With the keyword argument "get_mults=True", it will also return a dictionary mapping angles to multiplicities
+
+__spectrumify__ turns the dictionary of scattering data into a fake scattering spectrum that can easily understood by humans.

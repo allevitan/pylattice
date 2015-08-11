@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 import numpy as n
+from os import path
+
 
 def get_form_factors():
     """
@@ -8,14 +10,14 @@ def get_form_factors():
     sourced from the page at
     http://lamp.tu-graz.ac.at/~hadley/ss1/crystaldiffraction/atomicformfactors/formfactors.php
     """
-    constants = list(n.loadtxt(
-        __name__.split('.')[0]+'/form_factors.csv',
+    form_factors_file = '/'.join(path.realpath(__file__).split('/')[:-1]) \
+                       + '/form_factors.csv'
+    constants = list(n.loadtxt(form_factors_file,
         skiprows=1,
         delimiter=',',
         usecols={1,2,3,4,5,6,7,8,9}
     ))
-    labels = list(n.loadtxt(
-        __name__.split('.')[0]+'/form_factors.csv',
+    labels = list(n.loadtxt(form_factors_file,
         skiprows=1,
         delimiter=',',
         usecols={0},
@@ -32,9 +34,10 @@ def get_form_factors():
                     a3 * n.exp(-b3*(q/(4*n.pi))**2) + \
                     a4 * n.exp(-b4*(q/(4*n.pi))**2) + c
                     for a1,b1,a2,b2,a3,b3,a4,b4,c in constants]
-    return {label:form_factor
+    form_factors = {label:form_factor
             for label, form_factor
             in zip(labels, form_factors)}
+    return form_factors
         
 
 class Lattice(object):
@@ -64,8 +67,8 @@ class Basis(object):
     """
     Stores a basis, defined by atomic names and sites like so:
     basis = Basis(('C',[0,0,0]),('C',[0.25,0.25,0.25]),l_const=l_const)
-    It will inherit a lattice constant from whatever lattice
-    it is added too
+    Atomic sites are specified in cartesian space (not in the lattice
+    basis) and in units of l_const, which is 1 Angstrom by default.
     """
     
     def __init__(self,atoms,l_const=1):
@@ -76,7 +79,10 @@ class Basis(object):
 class Crystal(object):
     """
     Stores a lattice and a basis, and automatically calculates
-    some important information (i.e the structure factor)
+    the reciprocal lattice and the structure factor.
+    The calculated reciprocal lattice will include some vectors
+    that do not scatter because of symmetry - the structure
+    factor at those vectors will be 0.
     """
     
     def __init__(self,lattice,basis):
@@ -84,17 +90,29 @@ class Crystal(object):
         self.rlattice = lattice.rlattice
         self.basis = basis.basis
         self.structure_factor = self.gen_structure_factor()
-        
+    
+    
     def gen_structure_factor(self):
+        """
+        Returns a function that calculates the structure factor
+        per cubic Angstrom"""
+
         form_factors = get_form_factors()
         if not all(atom in form_factors for atom, site in self.basis):
             raise KeyError('Specified atom has no form factor in database')
+        
+        unit_vol = n.abs(n.dot(self.lattice[0],n.cross(
+            self.lattice[1],self.lattice[2])))
+
         def structure_factor(q):
             return sum([n.exp(1j*n.dot(q,site)) * \
                             form_factors[atom](n.linalg.norm(q))
-                            for atom, site in self.basis])
+                            for atom, site in self.basis]) / unit_vol
+
         return structure_factor
 
+    
+    
 #
 # This is the section of the code where some nice pre-made lattice
 # classes are defined.
