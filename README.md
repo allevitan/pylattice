@@ -6,7 +6,7 @@ Pylattice calculates powder x-ray diffraction spectra of crystalline materials. 
 
 ## Dependencies
 
-pylattice only depends on [numpy](http://www.numpy.org). If you want to plot the calculated spectra, you will need [matplotlib](http://matplotlib.org) as well.
+Pylattice only depends on [numpy](http://www.numpy.org). If you want to plot the calculated spectra, you will need [matplotlib](http://matplotlib.org) as well.
 
 ## Installation
 
@@ -39,12 +39,14 @@ p.ylabel(r'Scattering Intensity per Cubic Angstrom')
 p.show()
 ```
 
-In general, to define a crystal you will:
-* Define a lattice, either manually with __Lattice__  or using one of the helper functions __FCC__,__BCC__,___Cubic___,or__Hexagonal__.
+#### Defining a Crystal
+
+* Define a lattice, either manually with __Lattice__  or using one of the helper functions __FCC__,__BCC__,__Cubic__,or__Hexagonal__.
 * Define a basis using __Basis__, providing a list of atoms and locations
 * Define the crystal as the sum of the lattice and basis
 
+### Calculating the Spectrum
 
-__powder_xrd__ returns a dictionary mapping angles to intensities. With the keyword argument "get_mults=True", it will also return a dictionary mapping angles to multiplicities
+* __powder_xrd__(wavelength) returns a dictionary mapping angles to intensities. With the keyword argument "get_mults=True", it will also return a dictionary mapping angles to multiplicities
 
-__spectrumify__ turns the dictionary of scattering data into a fake scattering spectrum that can easily understood by humans.
+* __spectrumify__ turns the dictionary of scattering data into a fake scattering spectrum that can easily understood by humans.
